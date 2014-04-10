@@ -42,6 +42,23 @@ Example:
     Payday::Config.default.company_name = "Awesome Corp"
     Payday::Config.default.company_details = "10 This Way\nManhattan, NY 10001\n800-111-2222\nawesome@awesomecorp.com"
 
+Styling
+---
+By default the rendering of the PDF document itself is handled by `Payday::PdfRenderer`. This renderer has a number of configurable styling options.
+
+Example:
+
+    invoice.renderer.font = 'Courier'               # Defaults to 'Helvetica'
+    invoice.renderer.font = {
+      "Museo Sans" => {
+        :normal => "/path/to/museosans_500.ttf",
+        :bold => "/path/to/museosans_900.ttf"
+      }
+    }
+    invoice.renderer.font_size = 12                 # Defaults to 8
+
+For complete control over Invoice rendering, the default renderer can be completely replaced by any object implementing `render` and `render_to_file`. Both methods take a single argument - the invoice itself.
+
 Using Payday with ActiveRecord Objects (or any other objects, for that matter)
 ===
 

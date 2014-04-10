@@ -4,22 +4,38 @@ module Payday
   # {{Payday::Invoiceable#render_pdf}} to render pdfs yourself.
   class PdfRenderer
 
+    attr_writer :font, :font_size
+
+    def font
+      @font || 'Helvetica'
+    end
+
+    def font_size
+      @font_size || 8
+    end
+
     # Renders the given invoice as a pdf on disk
-    def self.render_to_file(invoice, path)
-      pdf(invoice).render_file(path)
+    def render_to_file(invoice, path)
+      generate_pdf(invoice).render_file(path)
     end
 
     # Renders the given invoice as a pdf, returning a string
-    def self.render(invoice)
-      pdf(invoice).render
+    def render(invoice)
+      generate_pdf(invoice).render
     end
 
     private
-      def self.pdf(invoice)
+      def generate_pdf(invoice)
         pdf = Prawn::Document.new(:page_size => invoice_or_default(invoice, :page_size))
 
-        # set up some default styling
-        pdf.font_size(8)
+        if font.is_a?(Hash)
+          pdf.font_families.update(font)
+          pdf.font font.first.first
+        else
+          pdf.font font
+        end
+
+        pdf.font_size font_size
 
         stamp(invoice, pdf)
         company_banner(invoice, pdf)
@@ -34,7 +50,7 @@ module Payday
         pdf
       end
 
-      def self.stamp(invoice, pdf)
+      def stamp(invoice, pdf)
         stamp = nil
         if invoice.refunded?
           stamp = I18n.t 'payday.status.refunded', :default => "REFUNDED"
@@ -46,17 +62,15 @@ module Payday
 
         if stamp
           pdf.bounding_box([150, pdf.cursor - 50], :width => pdf.bounds.width - 300) do
-            pdf.font("Helvetica-Bold") do
-              pdf.fill_color "cc0000"
-              pdf.text stamp, :align=> :center, :size => 25, :rotate => 15
-            end
+            pdf.fill_color "cc0000"
+            pdf.text stamp, :align => :center, :size => 25, :rotate => 15, :style => :bold
           end
         end
 
         pdf.fill_color "000000"
       end
 
-      def self.company_banner(invoice, pdf)
+      def company_banner(invoice, pdf)
         # render the logo
         image = invoice_or_default(invoice, :invoice_logo)
         height = nil
@@ -91,7 +105,7 @@ module Payday
         pdf.move_cursor_to(pdf.bounds.top - logo_height - 20)
       end
 
-      def self.bill_to_ship_to(invoice, pdf)
+      def bill_to_ship_to(invoice, pdf)
         bill_to_cell_style = { :borders => [], :padding => [2, 0]}
         bill_to_ship_to_bottom = 0
 
@@ -117,7 +131,7 @@ module Payday
         pdf.move_cursor_to(bill_to_ship_to_bottom - 20)
       end
 
-      def self.invoice_details(invoice, pdf)
+      def invoice_details(invoice, pdf)
         # invoice details
         table_data = []
 
@@ -174,7 +188,7 @@ module Payday
         end
       end
 
-      def self.line_items_table(invoice, pdf)
+      def line_items_table(invoice, pdf)
         table_data = []
         table_data << [bold_cell(pdf, I18n.t('payday.line_item.description', :default => "Description"), :borders => []),
             bold_cell(pdf, I18n.t('payday.line_item.unit_price', :default => "Unit Price"), :align => :center, :borders => []),
@@ -202,7 +216,7 @@ module Payday
         end
       end
 
-      def self.totals_lines(invoice, pdf)
+      def totals_lines(invoice, pdf)
         table_data = []
         table_data << [bold_cell(pdf, I18n.t('payday.invoice.subtotal', :default => "Subtotal:")),
             cell(pdf, number_to_currency(invoice.subtotal, invoice), :align => :right)]
@@ -224,12 +238,10 @@ module Payday
         end
       end
 
-      def self.notes(invoice, pdf)
+      def notes(invoice, pdf)
         if defined?(invoice.notes) && invoice.notes
           pdf.move_cursor_to(pdf.cursor - 30)
-          pdf.font("Helvetica-Bold") do
-            pdf.text(I18n.t('payday.invoice.notes', :default => "Notes"))
-          end
+          pdf.text(I18n.t('payday.invoice.notes', :default => "Notes"), :style => :bold)
           pdf.line_width = 0.5
           pdf.stroke_color = "cccccc"
           pdf.stroke_line([0, pdf.cursor - 3, pdf.bounds.width, pdf.cursor - 3])
@@ -238,13 +250,13 @@ module Payday
         end
       end
 
-      def self.page_numbers(pdf)
+      def page_numbers(pdf)
         if pdf.page_count > 1
           pdf.number_pages("<page> / <total>", :at => [pdf.bounds.right - 18, -15])
         end
       end
 
-      def self.invoice_or_default(invoice, property)
+      def invoice_or_default(invoice, property)
         if invoice.respond_to?(property) && invoice.send(property)
           invoice.send(property)
         else
@@ -252,23 +264,23 @@ module Payday
         end
       end
 
-      def self.cell(pdf, text, options = {})
+      def cell(pdf, text, options = {})
         Prawn::Table::Cell::Text.make(pdf, text, options)
       end
 
-      def self.bold_cell(pdf, text, options = {})
+      def bold_cell(pdf, text, options = {})
         cell(pdf, "<b>#{text}</b>", options.merge(:inline_format => true))
       end
 
       # Converts this number to a formatted currency string
-      def self.number_to_currency(number, invoice)
+      def number_to_currency(number, invoice)
         currency = Money::Currency.wrap(invoice_or_default(invoice, :currency))
         number = number * currency.subunit_to_unit
         number = number.round unless Money.infinite_precision
         Money.new(number, currency).format
       end
 
-      def self.max_cell_width(cell_proxy)
+      def max_cell_width(cell_proxy)
         max = 0
         cell_proxy.each do |cell|
           if cell.natural_content_width > max

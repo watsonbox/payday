@@ -124,71 +124,18 @@ module Payday
       expect(details).to include(["Awesome", "Absolutely"])
     end
 
-    describe "rendering" do
-      before do
-        Dir.mkdir("tmp") unless File.exists?("tmp")
-        Config.default.reset
-      end
+    it 'should use the PdfRenderer renderer by default' do
+      expect(Invoice.new.renderer).to be_a(PdfRenderer)
+    end
 
-      let(:invoice) { new_invoice(invoice_params) }
-      let(:invoice_params) { {} }
+    it 'should allow the renderer to be configured' do
+      i = Invoice.new
 
-      it "should render to a file" do
-        File.unlink("tmp/testing.pdf") if File.exists?("tmp/testing.pdf")
+      custom_renderer = double
+      expect(custom_renderer).to receive(:render).with(i)
 
-        invoice.render_pdf_to_file("tmp/testing.pdf")
-
-        expect(File.exists?("tmp/testing.pdf")).to be true
-      end
-
-      context 'with some invoice details' do
-        let(:invoice_params) { {
-          :invoice_details => { "Ordered By:" => "Alan Johnson", "Paid By:" => "Dude McDude" }
-        } }
-
-        it "should render an invoice correctly" do
-          Payday::Config.default.company_details = "10 This Way\nManhattan, NY 10001\n800-111-2222\nawesome@awesomecorp.com"
-
-          invoice.line_items += [
-            LineItem.new(:price => 20, :quantity => 5, :description => "Pants"),
-            LineItem.new(:price => 10, :quantity => 3, :description => "Shirts"),
-            LineItem.new(:price => 5, :quantity => 200, :description => "Hats")
-          ] * 30
-
-          expect(invoice.render_pdf).to match_binary_asset 'testing.pdf'
-        end
-      end
-
-      context 'paid, with an svg logo' do
-        before do
-          Payday::Config.default.invoice_logo = { :filename => "spec/assets/tiger.svg", :size => "100x100" }
-        end
-
-        let(:invoice_params) { { :paid_at => Date.civil(2012, 2, 22) } }
-
-        it 'should render an invoice correctly' do
-          invoice.line_items += [
-            LineItem.new(:price => 20, :quantity => 5, :description => "Pants"),
-            LineItem.new(:price => 10, :quantity => 3, :description => "Shirts"),
-            LineItem.new(:price => 5, :quantity => 200.0, :description => "Hats")
-          ] * 3
-
-          expect(invoice.render_pdf).to match_binary_asset 'svg.pdf'
-        end
-      end
-
-      def new_invoice(params = {})
-        default_params = {
-          :tax_rate => 0.1,
-          :notes => "These are some crazy awesome notes!",
-          :invoice_number => 12,
-          :due_at => Date.civil(2011, 1, 22),
-          :bill_to => "Alan Johnson\n101 This Way\nSomewhere, SC 22222",
-          :ship_to => "Frank Johnson\n101 That Way\nOther, SC 22229"
-        }
-
-        Invoice.new(default_params.merge(params))
-      end
+      i.renderer = custom_renderer
+      i.render_pdf
     end
   end
 end
