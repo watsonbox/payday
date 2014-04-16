@@ -18,7 +18,7 @@ module Payday::Invoiceable
   end
 
   def renderer
-    @renderer ||= Payday::PdfRenderer.new
+    @renderer || Payday::Config.default.renderer
   end
 
   # Who the invoice is being sent to.
