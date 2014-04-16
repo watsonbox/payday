@@ -280,10 +280,12 @@ module Payday
       def totals_table_data
         table_data = []
 
-        table_data << [
-          I18n.t('payday.invoice.subtotal', :default => "Subtotal:"),
-          number_to_currency(invoice.subtotal)
-        ]
+        if invoice.tax_rate > 0 || invoice.shipping_rate > 0
+          table_data << [
+            I18n.t('payday.invoice.subtotal', :default => "Subtotal:"),
+            number_to_currency(invoice.subtotal)
+          ]
+        end
 
         if invoice.tax_rate > 0
           table_data << [

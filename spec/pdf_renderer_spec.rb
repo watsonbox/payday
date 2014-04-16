@@ -10,6 +10,8 @@ module Payday
     let(:invoice) { new_invoice(invoice_params) }
     let(:invoice_params) { {} }
 
+    # Note: Testing certain protected renderer methods is okay because
+    # these are template methods and hence an interface for derived classes
     context 'with a dummy Prawn document' do
       let(:document) { double.as_null_object }
       before { allow(Prawn::Document).to receive("new").and_return(document) }
@@ -51,6 +53,24 @@ module Payday
         expect(document).to receive(:font_size).with(12)
         invoice.render_pdf
       end
+
+      context 'there are additional taxes' do
+        let(:invoice_params) { { :tax_rate => 0.1 } }
+
+        it 'should include a subtotal line in the totals table' do
+          invoice.render_pdf
+          expect(invoice.renderer.send(:totals_table_data).map { |k, v| k }).to eq(['Subtotal:', 'Tax:', 'Total:'])
+        end
+      end
+
+      context 'there are no additional taxes' do
+        let(:invoice_params) { { :tax_rate => 0 } }
+
+        it 'should not include a subtotal line in the totals table' do
+          invoice.render_pdf
+          expect(invoice.renderer.send(:totals_table_data).map { |k, v| k }).to eq(['Total:'])
+        end
+      end
     end
 
     # The following tests actually check rendered output. We probably don't want too many tests like this
@@ -73,7 +93,7 @@ module Payday
       it "should render an invoice correctly to a string" do
         Payday::Config.default.company_details = "10 This Way\nManhattan, NY 10001\n800-111-2222\nawesome@awesomecorp.com"
 
-        invoice.line_items += [
+        invoice.line_items = [
           LineItem.new(:price => 20, :quantity => 5, :description => "Pants"),
           LineItem.new(:price => 10, :quantity => 3, :description => "Shirts"),
           LineItem.new(:price => 5, :quantity => 200, :description => "Hats")
@@ -91,7 +111,7 @@ module Payday
       let(:invoice_params) { { :paid_at => Date.civil(2012, 2, 22) } }
 
       it 'should render an invoice correctly to a string' do
-        invoice.line_items += [
+        invoice.line_items = [
           LineItem.new(:price => 20, :quantity => 5, :description => "Pants"),
           LineItem.new(:price => 10, :quantity => 3, :description => "Shirts"),
           LineItem.new(:price => 5, :quantity => 200.0, :description => "Hats")
@@ -108,7 +128,12 @@ module Payday
         :invoice_number => 12,
         :due_at => Date.civil(2011, 1, 22),
         :bill_to => "Alan Johnson\n101 This Way\nSomewhere, SC 22222",
-        :ship_to => "Frank Johnson\n101 That Way\nOther, SC 22229"
+        :ship_to => "Frank Johnson\n101 That Way\nOther, SC 22229",
+        :line_items => [
+          LineItem.new(:price => 20, :quantity => 5, :description => "Pants"),
+          LineItem.new(:price => 10, :quantity => 3, :description => "Shirts"),
+          LineItem.new(:price => 5, :quantity => 200.0, :description => "Hats")
+        ]
       }
 
       Invoice.new(default_params.merge(params))
