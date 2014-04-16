@@ -269,7 +269,7 @@ module Payday
       end
 
       def bold_cell(pdf, text, options = {})
-        cell(pdf, "<b>#{text}</b>", options.merge(:inline_format => true))
+        cell(pdf, text, options.merge(:font_style => :bold))
       end
 
       # Converts this number to a formatted currency string
