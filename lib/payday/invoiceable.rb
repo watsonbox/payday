@@ -78,15 +78,4 @@ module Payday::Invoiceable
   def render_pdf_to_file(path)
     renderer.render_to_file(self, path)
   end
-
-  # Iterates through the details on this invoiceable. The block given should accept
-  # two parameters, the detail name and the actual detail value.
-  def each_detail(&block)
-    return if defined?(invoice_details).nil?
-
-    invoice_details.each do |detail|
-      block.call(detail[0], detail[1])
-    end
-  end
 end
-

@@ -57,6 +57,8 @@ Example:
     }
     invoice.renderer.font_size = 12                 # Defaults to 8
 
+If these styling options are not sufficient, you can inherit from `Payday::PdfRenderer` and override a specific part of the rendering process, for example `render_header`, `render_line_items`, or `render_footer`.
+
 For complete control over Invoice rendering, the default renderer can be completely replaced by any object implementing `render` and `render_to_file`. Both methods take a single argument - the invoice itself.
 
 Using Payday with ActiveRecord Objects (or any other objects, for that matter)

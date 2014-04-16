@@ -100,30 +100,6 @@ module Payday
       expect(i.paid?).to eq(true)
     end
 
-    it "should be able to iterate over details" do
-      i = Invoice.new(:invoice_details => [["Test", "Yes"], ["Awesome", "Absolutely"]])
-      details = []
-      i.each_detail do |key, value|
-        details << [key, value]
-      end
-
-      expect(details.length).to eq(2)
-      expect(details).to include(["Test", "Yes"])
-      expect(details).to include(["Awesome", "Absolutely"])
-    end
-
-    it "should be able to iterate through invoice_details as a hash" do
-      i = Invoice.new(:invoice_details => {"Test" => "Yes", "Awesome" => "Absolutely"})
-      details = []
-      i.each_detail do |key, value|
-        details << [key, value]
-      end
-
-      expect(details.length).to eq(2)
-      expect(details).to include(["Test", "Yes"])
-      expect(details).to include(["Awesome", "Absolutely"])
-    end
-
     it 'should use the PdfRenderer renderer by default' do
       expect(Invoice.new.renderer).to be_a(PdfRenderer)
     end
