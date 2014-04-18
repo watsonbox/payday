@@ -71,6 +71,26 @@ module Payday
           expect(invoice.renderer.send(:totals_table_data).map { |k, v| k }).to eq(['Total:'])
         end
       end
+
+      context 'invoice-specific translations are provided for shipping and tax labels' do
+        let(:invoice_params) { { :tax_rate => 0.1, :shipping_rate => 0.2 } }
+
+        before do
+          allow(invoice).to receive(:payday_translation) do |key|
+            {
+              'invoice.shipping' => 'USPS Priority Mail:',
+              'invoice.tax' => 'Local Sales Tax, 12.5%'
+            }[key]
+          end
+        end
+
+        it 'should use these custom translations in the totals table' do
+          invoice.render_pdf
+          expect(invoice.renderer.send(:totals_table_data).map { |k, v| k }).to eq(
+            ["Subtotal:", "Local Sales Tax, 12.5%", "USPS Priority Mail:", "Total:"]
+          )
+        end
+      end
     end
 
     # The following tests actually check rendered output. We probably don't want too many tests like this

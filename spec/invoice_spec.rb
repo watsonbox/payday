@@ -5,10 +5,8 @@ module Payday
 
     it "should be able to be initalized with a hash of options" do
       i = Invoice.new(:invoice_number => 20, :bill_to => "Here", :ship_to => "There",
-          :notes => "These are some notes.",
-          :line_items => [LineItem.new(:price => 10, :quantity => 3, :description => "Shirts")],
-          :shipping_rate => 15.00, :shipping_description => "USPS Priority Mail:",
-          :tax_rate => 0.125, :tax_description => "Local Sales Tax, 12.5%")
+          :notes => "These are some notes.", :shipping_rate => 15.00, :tax_rate => 0.125,
+          :line_items => [LineItem.new(:price => 10, :quantity => 3, :description => "Shirts")])
 
       expect(i.invoice_number).to eq(20)
       expect(i.bill_to).to eq("Here")
@@ -16,9 +14,7 @@ module Payday
       expect(i.notes).to eq("These are some notes.")
       expect(i.line_items[0].description).to eq("Shirts")
       expect(i.shipping_rate).to eq(BigDecimal.new("15.00"))
-      expect(i.shipping_description).to eq("USPS Priority Mail:")
       expect(i.tax_rate).to eq(BigDecimal.new("0.125"))
-      expect(i.tax_description).to eq("Local Sales Tax, 12.5%")
     end
 
     it "should total all of the line items into a subtotal correctly" do

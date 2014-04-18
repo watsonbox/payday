@@ -71,23 +71,19 @@ module Payday
       end
 
       def render_stamp
-        stamp = nil
-        if invoice.refunded?
-          stamp = I18n.t 'payday.status.refunded', :default => "REFUNDED"
-        elsif invoice.paid?
-          stamp = I18n.t 'payday.status.paid', :default => "PAID"
-        elsif invoice.overdue?
-          stamp = I18n.t 'payday.status.overdue', :default => "OVERDUE"
+        stamp = case
+          when invoice.refunded? then t 'status.refunded'
+          when invoice.paid? then t 'status.paid'
+          when invoice.overdue? then t 'status.overdue'
         end
 
         if stamp
           pdf.bounding_box([150, pdf.cursor - 50], :width => pdf.bounds.width - 300) do
             pdf.fill_color "cc0000"
             pdf.text stamp, :align => :center, :size => 25, :rotate => 15, :style => :bold
+            pdf.fill_color "000000"
           end
         end
-
-        pdf.fill_color "000000"
       end
 
       def render_company_banner
@@ -131,14 +127,14 @@ module Payday
 
         # render bill to
         pdf.float do
-          table = pdf.table([[bold_cell(pdf, I18n.t('payday.invoice.bill_to', :default => "Bill To"))],
+          table = pdf.table([[bold_cell(pdf, t('invoice.bill_to'))],
               [invoice.bill_to]], :column_widths => [200], :cell_style => bill_to_cell_style)
           bill_to_ship_to_bottom = pdf.cursor
         end
 
         # render ship to
         if defined?(invoice.ship_to) && !invoice.ship_to.nil?
-          table = pdf.make_table([[bold_cell(pdf, I18n.t('payday.invoice.ship_to', :default => "Ship To"))],
+          table = pdf.make_table([[bold_cell(pdf, t('invoice.ship_to'))],
               [invoice.ship_to]], :column_widths => [200], :cell_style => bill_to_cell_style)
 
           pdf.bounding_box([pdf.bounds.width - table.width, pdf.cursor], :width => table.width, :height => table.height + 2) do
@@ -166,10 +162,7 @@ module Payday
 
         # Invoice number
         if defined?(invoice.invoice_number) && invoice.invoice_number
-          table_data << [
-            I18n.t('payday.invoice.invoice_no', :default => "Invoice #:"),
-            invoice.invoice_number.to_s
-          ]
+          table_data << [t('invoice.invoice_no'), invoice.invoice_number.to_s]
         end
 
         # Due at
@@ -180,10 +173,7 @@ module Payday
             due_date = invoice.due_at.to_s
           end
 
-          table_data << [
-            I18n.t('payday.invoice.due_date', :default => "Due Date:"),
-            due_date
-          ]
+          table_data << [t('invoice.due_date'), due_date]
         end
 
         # Paid at
@@ -194,10 +184,7 @@ module Payday
             paid_date = invoice.paid_at.to_s
           end
 
-          table_data << [
-            I18n.t('payday.invoice.paid_date', :default => "Paid Date:"),
-            paid_date
-          ]
+          table_data << [t('invoice.paid_date'), paid_date]
         end
 
         # Refunded on
@@ -246,10 +233,10 @@ module Payday
         [
           # Header
           [
-            I18n.t('payday.line_item.description', :default => "Description"),
-            I18n.t('payday.line_item.unit_price', :default => "Unit Price"),
-            I18n.t('payday.line_item.quantity', :default => "Quantity"),
-            I18n.t('payday.line_item.amount', :default => "Amount")
+            t('line_item.description'),
+            t('line_item.unit_price'),
+            t('line_item.quantity'),
+            t('line_item.amount')
           ],
           # Content
           *invoice.line_items.map do |line|
@@ -281,38 +268,25 @@ module Payday
         table_data = []
 
         if invoice.tax_rate > 0 || invoice.shipping_rate > 0
-          table_data << [
-            I18n.t('payday.invoice.subtotal', :default => "Subtotal:"),
-            number_to_currency(invoice.subtotal)
-          ]
+          table_data << [t('invoice.subtotal'), number_to_currency(invoice.subtotal)]
         end
 
         if invoice.tax_rate > 0
-          table_data << [
-            invoice.tax_description.nil? ? I18n.t('payday.invoice.tax', :default => "Tax:") : invoice.tax_description,
-            number_to_currency(invoice.tax)
-          ]
+          table_data << [t('invoice.tax'), number_to_currency(invoice.tax)]
         end
 
         if invoice.shipping_rate > 0
-          table_data << [
-            invoice.shipping_description.nil? ? I18n.t('payday.invoice.shipping', :default => "Shipping:") : invoice.shipping_description,
-            number_to_currency(invoice.shipping)
-          ]
+          table_data << [t('invoice.shipping'), number_to_currency(invoice.shipping)]
         end
 
-        table_data << [
-          I18n.t('payday.invoice.total', :default => "Total:"),
-          number_to_currency(invoice.total)
-        ]
-
+        table_data << [t('invoice.total'), number_to_currency(invoice.total)]
         table_data
       end
 
       def render_notes
         if defined?(invoice.notes) && invoice.notes
           pdf.move_cursor_to(pdf.cursor - 30)
-          pdf.text(I18n.t('payday.invoice.notes', :default => "Notes"), :style => :bold)
+          pdf.text(t('invoice.notes'), :style => :bold)
           pdf.line_width = 0.5
           pdf.stroke_color = "cccccc"
           pdf.stroke_line([0, pdf.cursor - 3, pdf.bounds.width, pdf.cursor - 3])
@@ -333,6 +307,12 @@ module Payday
         else
           Payday::Config.default.send(property)
         end
+      end
+
+      # Looks up a translation, first checking for custom invoice-specific translations
+      def t(key)
+        t = defined?(invoice.payday_translation) ? invoice.payday_translation(key) : nil
+        t || I18n.t("payday.#{key}")
       end
 
       def cell(pdf, text, options = {})
