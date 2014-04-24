@@ -267,15 +267,16 @@ module Payday
       def totals_table_data
         table_data = []
 
-        if invoice.tax_rate > 0 || invoice.shipping_rate > 0
+        # Render subtotal only if there are tax or shipping lines
+        if [:tax_rate, :shipping_rate].any? { |m| invoice.respond_to?(m) && invoice.send(m) > 0 }
           table_data << [t('invoice.subtotal'), number_to_currency(invoice.subtotal)]
         end
 
-        if invoice.tax_rate > 0
+        if defined?(invoice.tax_rate) && invoice.tax_rate > 0
           table_data << [t('invoice.tax'), number_to_currency(invoice.tax)]
         end
 
-        if invoice.shipping_rate > 0
+        if defined?(invoice.shipping_rate) && invoice.shipping_rate > 0
           table_data << [t('invoice.shipping'), number_to_currency(invoice.shipping)]
         end
 
