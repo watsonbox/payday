@@ -311,9 +311,9 @@ module Payday
       end
 
       # Looks up a translation, first checking for custom invoice-specific translations
-      def t(key)
+      def t(key, *options)
         t = defined?(invoice.payday_translation) ? invoice.payday_translation(key) : nil
-        t || I18n.t("payday.#{key}")
+        t || I18n.t("payday.#{key}", *options)
       end
 
       def cell(pdf, text, options = {})
